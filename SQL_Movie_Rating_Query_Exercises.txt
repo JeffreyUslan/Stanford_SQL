@@ -1,0 +1,142 @@
+*Q1  (1/1 point)
+*Find the titles of all movies directed by Steven Spielberg. 
+
+SELECT title
+FROM Movie 
+WHERE director=='Steven Spielberg'
+
+*Q2  (1/1 point)
+*Find all years that have a movie that received a rating of 4 or 5, 
+*and sort them in increasing order. 
+
+SELECT distinct Movie.year
+FROM Movie, Rating
+Where  Movie.mID==Rating.mID and stars>=4
+ORDER BY Movie.year
+
+*Q3  (1/1 point)
+*Find the titles of all movies that have no ratings. 
+
+SELECT distinct title
+FROM Movie
+WHERE not mID in (
+SELECT distinct mID 
+FROM Rating
+)
+
+
+*Q4  (1/1 point)
+*Some reviewers didn't provide a date with their rating. 
+*Find the names of all reviewers who have ratings with a NULL value for the date. 
+
+SELECT name 
+FROM Reviewer
+WHERE rID in(
+SELECT rID
+FROM Rating
+WHERE ratingDate is null
+)
+
+
+*Q5  (1/1 point)
+*Write a query to return the ratings data in a more readable format: 
+*reviewer name, movie title, stars, and ratingDate. Also, sort the data, 
+*first by reviewer name, then by movie title, and lastly by number of stars. 
+
+SELECT name as 'reviewer name', title as 'movie title', stars, ratingDate
+FROM Movie join (SELECT *
+FROM Reviewer join Rating using(rID)
+) using(mID)
+ORDER BY name, title, stars, ratingDate
+
+*Q6  (1/1 point)
+*For all cases where the same reviewer rated the same movie twice and
+* gave it a higher rating the second time, return the reviewer's name
+* and the title of the movie. 
+
+SELECT Reviewer.name, Movie.title
+FROM (Movie join Reviewer) join (SELECT rID, mID
+FROM Rating join
+(SELECT rID, mID, min(ratingDate) as early, stars
+FROM Rating join (SELECT rID, mID
+    FROM (
+        SELECT count(*) as cnt, rID, mID
+        FROM Rating 
+        GROUP BY rID, mID
+        )
+     where cnt==2) using(rID,mID)
+GROUP BY rID,mID
+) james using(rID,mID)
+WHERE Rating.stars < james.stars
+) using(rID,mID)
+
+
+*Q7  (1/1 point)
+*For each movie that has at least one rating, find the highest number of stars 
+*that movie received. Return the movie title and number of stars. Sort by movie title. 
+
+
+SELECT title, james.stars
+FROM Movie join	(
+	SELECT max(stars) as stars,mID 
+	FROM Rating join (
+		SELECT distinct mID
+		FROM Rating
+		) john using(mID)
+	GROUP BY mID	
+	) james using(mID)
+ORDER BY title	
+
+
+
+*Q8  (1 point possible)
+*For each movie, return the title and the 'rating spread', that is, 
+*the difference between highest and lowest ratings given to that movie. 
+*Sort by rating spread from highest to lowest, then by movie title. 
+
+FROM Movie join (
+	SELECT (max(stars)-min(stars)) as spread,  mID
+	FROM Rating
+	GROUP BY mID
+	) james using(mID)
+ORDER BY james.spread DESC, title
+
+*Q9  (1 point possible)
+*Find the difference between the average rating of movies released before
+* 1980 and the average rating of movies released after 1980. 
+*(Make sure to calculate the average rating for each movie, 
+*then the average of those averages for movies before 1980 and movies after. 
+*Don't just calculate the overall average rating before and after 1980.) 
+
+SELECT n79.avgstars-n81.avgstars
+FROM (
+SELECT avg(avgstars) as avgstars
+FROM (SELECT avg(stars) as avgstars, mID
+FROM Rating join (	
+	SELECT mID
+	FROM Movie
+	WHERE year<1980
+	GROUP BY mID
+	) using(mID)
+GROUP BY  mID
+) 
+) n79 join (
+SELECT avg(avgstars) as avgstars
+FROM (SELECT avg(stars) as avgstars, mID
+FROM Rating join (	
+	SELECT mID
+	FROM Movie
+	WHERE year>1980
+	GROUP BY mID
+	) using(mID)
+GROUP BY  mID
+) 
+) n81
+
+
+
+
+
+
+
+
