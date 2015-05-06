@@ -1,0 +1,72 @@
+*Q1  (1 point possible)
+*It's time for the seniors to graduate. Remove all 12th graders from Highschooler. 
+
+delete from Highschooler
+where ID in
+  (select ID
+   from Highschooler
+   WHERE grade==12)
+   
+   
+*Q2  (1 point possible)
+*If two students A and B are friends, and A likes B but not vice-versa, 
+*remove the Likes tuple. 
+
+
+*A and B are friends and A likes B
+DELETE FROM Likes
+WHERE Likes.ID1 in (
+SELECT S3.L1
+FROM (
+	SELECT S1.L1 as L1, S1.L2 as L2, S2.L1 as L3 , S2.L2 as L4
+	FROM (
+		SELECT Likes.ID1 as L1, Likes.ID2 as L2
+		FROM Friend join Likes on Friend.ID1=Likes.ID1 and Friend.ID2=Likes.ID2
+		)S1 left join (
+		SELECT Likes.ID1 as L1, Likes.ID2 as L2
+		FROM Friend join Likes on Friend.ID1=Likes.ID1 and Friend.ID2=Likes.ID2
+		) S2 on S1.L2==S2.L1
+	) S3
+WHERE S3.L3 is null
+
+) and Likes.ID2 in (
+SELECT S3.L2
+FROM (
+	SELECT S1.L1 as L1, S1.L2 as L2, S2.L1 as L3 , S2.L2 as L4
+	FROM (
+		SELECT Likes.ID1 as L1, Likes.ID2 as L2
+		FROM Friend join Likes on Friend.ID1=Likes.ID1 and Friend.ID2=Likes.ID2
+		)S1 left join (
+		SELECT Likes.ID1 as L1, Likes.ID2 as L2
+		FROM Friend join Likes on Friend.ID1=Likes.ID1 and Friend.ID2=Likes.ID2
+		) S2 on S1.L2==S2.L1
+	) S3
+WHERE S3.L3 is null
+)
+
+
+
+*Q3  (1 point possible)
+*For all cases where A is friends with B, and B is friends with C,
+* add a new friendship for the pair A and C. Do not add duplicate friendships, 
+*friendships that already exist, or friendships with oneself. 
+*(This one is a bit challenging; congratulations if you get it right.) 
+
+
+*not done
+
+INSERT into Friend 
+SELECT distinct F1, F3
+FROM (
+	SELECT Fr1.ID1 as F1, Fr1.ID2 as F2, Fr2.ID2 as F3
+	FROM Friend Fr1 left join Friend Fr2 
+			on Fr1.ID2==Fr2.ID1 and Fr1.ID1<>Fr2.ID2
+	) Fr3 left join Friend Fr4 on Fr3.F3==Fr4.ID1
+WHERE Fr3.F1<>Fr4.ID2
+
+
+
+
+
+
+

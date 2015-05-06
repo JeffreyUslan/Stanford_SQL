@@ -1,0 +1,131 @@
+*Q1  (1 point possible)
+*Find the names of all students who are friends with someone named Gabriel. 
+
+SELECT name FROM Highschooler
+WHERE ID in (
+	SELECT ID1 
+	FROM Friend
+	WHERE ID2 in (SELECT ID FROM Highschooler WHERE name=='Gabriel')
+	)
+	
+*Q2  (1 point possible)
+*For every student who likes someone 2 or more grades younger than themselves, 
+*return that student's name and grade, and the name and grade of the student they like. 
+
+SELECT hsname1, hsgrade1, hsname2, hsgrade2
+FROM (
+	SELECT hsname1, hsgrade1, Highschooler.name as hsname2, Highschooler.grade as hsgrade2, (hsgrade1-Highschooler.grade) as spread
+	FROM Highschooler join ( 
+		SELECT distinct Highschooler.name as hsname1, Highschooler.grade as hsgrade1, ID2 as ID
+		FROM Highschooler, Likes
+		WHERE Highschooler.ID==Likes.ID1
+		) using(ID)
+	)
+WHERE spread>1
+
+
+
+*Q3  (1 point possible)
+*For every pair of students who both like each other, return the name and grade 
+*of both students. Include each pair only once, with the two names in alphabetical order. 
+
+SELECT l1.name,l1.grade,l2.name,l2.grade
+FROM Highschooler l1,Highschooler l2,Likes  
+WHERE  (l1.ID=ID1 and l2.ID=ID2) and l2.ID in(
+	SELECT ID1 FROM	Likes WHERE ID2=l1.ID) and l1.name<l2.name; 
+
+*Q4  (1/1 point)
+*Find all students who do not appear in the Likes table 
+*(as a student who likes or is liked) and return their names and grades. 
+*Sort by grade, then by name within each grade. 
+
+SELECT name, grade
+FROM Highschooler
+WHERE not ID in (SELECT ID1 FROM Likes) and not ID in (SELECT ID2 FROM Likes)
+
+
+*Q5  (1 point possible)
+*For every situation where student A likes student B, but we have no information 
+*about whom B likes (that is, B does not appear as an ID1 in the Likes table),
+* return A and B's names and grades. 
+
+SELECT hat1.name, hat1.grade, hat2.name, hat2.grade
+FROM (
+SELECT name, grade, fid
+FROM Highschooler join (
+	SELECT distinct ID1, ID2, (ID1*10000 + ID2) as fid
+	FROM Likes
+	WHERE ID2 in (
+			SELECT ID2
+			FROM Likes
+			WHERE not ID2 in (SELECT ID1 FROM Likes)
+			)
+	) james
+on Highschooler.ID==james.ID1) hat1 join (
+SELECT name, grade, fid
+FROM Highschooler join (
+	SELECT distinct ID1, ID2, (ID1*10000 + ID2) as fid
+	FROM Likes
+	WHERE ID2 in (
+			SELECT ID2
+			FROM Likes
+			WHERE not ID2 in (SELECT ID1 FROM Likes)
+			)
+	) john
+on Highschooler.ID==john.ID2
+) hat2 using(fid)
+
+
+*Q6  (1 point possible)
+*Find names and grades of students who only have friends in the same grade. 
+*Return the result sorted by grade, then by name within each grade. 
+
+SELECT t.nm,t.grad 
+FROM (
+	SELECT h1.ID as mid,h1.name as nm,h1.grade as grad,ID2,h2.name,h2.grade as grad1 
+	FROM Highschooler h1,Highschooler h2,Friend
+	WHERE h1.ID=ID1 and h2.ID=ID2
+	) t 
+GROUP BY t.mid having (max(t.grad1)=t.grad and min(t.grad1)=t.grad) 
+ORDER BY t.grad,t.nm;
+
+
+*Q7  (1 point possible)
+*For each student A who likes a student B where the two are not friends, 
+*find if they have a friend C in common (who can introduce them!). 
+*For all such trios, return the name and grade of A, B, and C.
+
+SELECT t.an,t.ag,t.bn,t.bg,t.cn,t.cg 
+FROM ( 
+	SELECT distinct a.name as an,a.grade as ag,b.name as bn,b.grade as bg,c.name as cn, 
+c.grade as cg,b.ID as bid,c.ID as cid 
+	FROM Highschooler a,Highschooler b, Highschooler c,Friend,Likes 
+	WHERE (a.ID=Likes.ID1 and b.ID=Likes.ID2) and 
+			(a.ID=Friend.ID1 and b.ID not in(select f.ID2 from friend f where f.ID1=a.ID)) and
+			(a.ID=Friend.ID1 and c.ID in(select f1.ID2 from friend f1 where f1.ID1=a.ID))) t 
+	WHERE t.cid in(
+					SELECT f2.ID2 
+					FROM friend f2 
+					WHERE f2.ID1=t.bid);
+
+
+
+*Q8  (1 point possible)
+*Find the difference between the number of students in the school and 
+*the number of different first names. 
+
+
+SELECT abs(count(*)-count(distinct name))
+FROM Highschooler
+
+
+*Q9  (1 point possible)
+*Find the name and grade of all students who are liked by more than one other student. 
+
+SELECT name, grade
+FROM Highschooler join (
+				SELECT ID2, count(ID2) as cnt
+				FROM Likes
+				GROUP BY ID2
+				) S1 on Highschooler.ID==S1.ID2
+WHERE S1.cnt>1

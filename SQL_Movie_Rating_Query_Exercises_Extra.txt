@@ -33,6 +33,26 @@ WHERE Movie.director==james.name
 	
 	
 	
+*Q4  (1 point possible)
+*Find the titles of all movies not reviewed by Chris Jackson. 
+	
+SELECT distinct title
+FROM Movie
+WHERE mID in (
+	SELECT mID
+	FROM Movie
+	WHERE not mID in (
+		SELECT mID
+		FROM Rating
+		WHERE rID in (	
+			SELECT rID
+			FROM Reviewer
+			WHERE name=='Chris Jackson'
+			)
+		)
+	)
+	
+	
 	
 	
 	
